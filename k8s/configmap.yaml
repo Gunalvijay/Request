@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: soap-generation-config
+data:
+  KAFKA_BOOTSTRAP_SERVERS: "kafka-broker.kafka.svc.cluster.local:9092"
+  KAFKA_INPUT_TOPIC: "transcript-topic"
+  KAFKA_OUTPUT_TOPIC: "soap-topic"
+  KAFKA_CONSUMER_GROUP: "soap-generation-group"
+  KAFKA_AUTO_OFFSET_RESET: "earliest"
+  KAFKA_MAX_POLL_RECORDS: "10"
+
+  WORKER_POOL_SIZE: "4"
+  MAX_QUEUE_SIZE: "100"
+
+  OLLAMA_HOST: "http://localhost:11434"
+  MEDGEMMA_MODEL: "medgemma:latest"
+  LLM_TIMEOUT_SECONDS: "60"
+  LLM_MAX_RETRIES: "3"
+
+  SERVICE_NAME: "soap-generation-service"
+  LOG_LEVEL: "INFO"

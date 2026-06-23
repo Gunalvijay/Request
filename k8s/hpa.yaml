@@ -1,0 +1,87 @@
+# =====================================================================
+# HorizontalPodAutoscaler for the SOAP Generation microservice.
+#
+# This is the piece in the HLD diagram labeled:
+#   "HORIZONTAL POD AUTOSCALER (HPA) - Scale based on:
+#    CPU / Memory / Kafka Lag / Custom Metrics"
+#
+# autoscaling/v2 supports CPU + memory out of the box. Kafka-lag-based
+# scaling needs an external metrics source (KEDA or prometheus-adapter +
+# kafka-exporter) - since Prometheus/Grafana are deliberately out of scope
+# for now, this manifest ships with CPU/Memory metrics active, and Kafka
+# lag scaling is included as a ready-to-enable section once that
+# observability stack is back in scope.
+# =====================================================================
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: soap-generation-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: soap-generation-service
+
+  minReplicas: 3
+  maxReplicas: 6   # cap at 10 since Kafka has 4 partitions; size to your partition count
+
+  metrics:
+    # --- Scale on CPU utilization ---
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+
+    # --- Scale on memory utilization ---
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 75
+
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 30
+      policies:
+        - type: Percent
+          value: 100
+          periodSeconds: 60
+    scaleDown:
+      # Slower scale-down to avoid thrashing while Kafka consumers
+      # rebalance partitions across pods.
+      stabilizationWindowSeconds: 120
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 60
+
+---
+# ---------------------------------------------------------------------
+# OPTIONAL (disabled by default): Kafka-consumer-lag based scaling.
+# Requires KEDA (https://keda.sh) installed in the cluster. Once enabled,
+# this replaces/augments the CPU-based HPA above by scaling on actual
+# backlog in transcript-topic, which is the most accurate throughput
+# signal per the HLD's "Kafka Lag" scaling trigger.
+#
+# Uncomment and apply once Kafka exporter / KEDA is available:
+# ---------------------------------------------------------------------
+# apiVersion: keda.sh/v1alpha1
+# kind: ScaledObject
+# metadata:
+#   name: soap-generation-keda-scaler
+# spec:
+#   scaleTargetRef:
+#     name: soap-generation-service
+#   minReplicaCount: 2
+#   maxReplicaCount: 10
+#   triggers:
+#     - type: kafka
+#       metadata:
+#         bootstrapServers: kafka-broker.kafka.svc.cluster.local:9092
+#         consumerGroup: soap-generation-group
+#         topic: transcript-topic
+#         lagThreshold: "20"   # scale up if backlog per partition exceeds this
+#         allowIdleConsumers: "false"

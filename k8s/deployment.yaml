@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: soap-generation-service
+  labels:
+    app: soap-generation-service
+    team: team-3
+spec:
+  # NOTE: replicas is intentionally omitted here / managed by the HPA below.
+  # If you apply this manifest standalone, k8s defaults to 1 and the HPA
+  # takes over control immediately after.
+  replicas: 1
+  selector:
+    matchLabels:
+      app: soap-generation-service
+  template:
+    metadata:
+      labels:
+        app: soap-generation-service
+    spec:
+      containers:
+        - name: soap-generation-service
+
+          image: soap-generation-service:v1
+          imagePullPolicy: Never
+
+          env:
+          - name: OLLAMA_HOST
+            value: http://localhost:11434
+
+          envFrom:
+          - configMapRef:
+              name: soap-generation-config
+
+          ports:
+          - containerPort: 8080
+
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+
+            limits:
+              cpu: "1000m"
+              memory: "512Mi"
+
+        - name: ollama
+
+          image: ollama/ollama:latest
+
+          ports:
+          - containerPort: 11434
+
+          resources:
+            requests:
+              cpu: "1000m"
+              memory: "2Gi"
+
+            limits:
+              cpu: "2000m"
+              memory: "3Gi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: soap-generation-service
+  labels:
+    app: soap-generation-service
+spec:
+  selector:
+    app: soap-generation-service
+  ports:
+    - name: health
+      port: 8080
+      targetPort: 8080
+    - name: metrics
+      port: 9100
+      targetPort: 9100
