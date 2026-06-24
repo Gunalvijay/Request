@@ -22,11 +22,10 @@ spec:
     kind: Deployment
     name: soap-generation-service
 
-  minReplicas: 3
-  maxReplicas: 6   # cap at 10 since Kafka has 4 partitions; size to your partition count
+  minReplicas: 1
+  maxReplicas: 2
 
   metrics:
-    # --- Scale on CPU utilization ---
     - type: Resource
       resource:
         name: cpu
@@ -34,7 +33,6 @@ spec:
           type: Utilization
           averageUtilization: 70
 
-    # --- Scale on memory utilization ---
     - type: Resource
       resource:
         name: memory
@@ -50,8 +48,6 @@ spec:
           value: 100
           periodSeconds: 60
     scaleDown:
-      # Slower scale-down to avoid thrashing while Kafka consumers
-      # rebalance partitions across pods.
       stabilizationWindowSeconds: 120
       policies:
         - type: Pods

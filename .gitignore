@@ -1,0 +1,9 @@
+*.tar
+
+node_modules/
+dist/
+coverage/
+
+.env
+
+__pycache__/
