@@ -1,6 +1,5 @@
 apiVersion: apps/v1
 kind: Deployment
-
 metadata:
   name: kafka
 
@@ -17,7 +16,6 @@ spec:
         app: kafka
 
     spec:
-
       containers:
       - name: kafka
         image: apache/kafka:3.7.0
@@ -27,6 +25,7 @@ spec:
         - containerPort: 9093
 
         env:
+
         - name: KAFKA_NODE_ID
           value: "1"
 
@@ -37,7 +36,7 @@ spec:
           value: "1@kafka:9093"
 
         - name: KAFKA_LISTENERS
-          value: "PLAINTEXT://:9092,CONTROLLER://:9093"
+          value: "PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093"
 
         - name: KAFKA_ADVERTISED_LISTENERS
           value: "PLAINTEXT://kafka:9092"
@@ -48,68 +47,5 @@ spec:
         - name: KAFKA_INTER_BROKER_LISTENER_NAME
           value: "PLAINTEXT"
 
-        - name: KAFKA_AUTO_CREATE_TOPICS_ENABLE
-          value: "true"
-
-        - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
-          value: "1"
-
-        - name: KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR
-          value: "1"
-
-        - name: KAFKA_TRANSACTION_STATE_LOG_MIN_ISR
-          value: "1"
-
         - name: CLUSTER_ID
           value: "MkU3OEVBNTcwNTJENDM2Qk"
-
-        volumeMounts:
-        - name: kafka-data
-          mountPath: /var/lib/kafka/data
-
-        readinessProbe:
-          exec:
-            command:
-            - /opt/kafka/bin/kafka-broker-api-versions.sh
-            - --bootstrap-server
-            - localhost:9092
-          initialDelaySeconds: 20
-          periodSeconds: 10
-
-        livenessProbe:
-          exec:
-            command:
-            - /opt/kafka/bin/kafka-broker-api-versions.sh
-            - --bootstrap-server
-            - localhost:9092
-          initialDelaySeconds: 30
-          periodSeconds: 15
-
-        resources:
-          requests:
-            cpu: "250m"
-            memory: "512Mi"
-
-          limits:
-            cpu: "1000m"
-            memory: "1Gi"
-
-      volumes:
-      - name: kafka-data
-        emptyDir: {}
-
----
-
-apiVersion: v1
-kind: Service
-
-metadata:
-  name: kafka
-
-spec:
-  selector:
-    app: kafka
-
-  ports:
-  - port: 9092
-    targetPort: 9092
