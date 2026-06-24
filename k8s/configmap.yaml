@@ -4,7 +4,7 @@ metadata:
   name: soap-generation-config
 
 data:
-  KAFKA_BOOTSTRAP_SERVERS: "kafka-broker.kafka.svc.cluster.local:9092"
+  KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
 
   KAFKA_INPUT_TOPIC: "transcript-topic"
   KAFKA_OUTPUT_TOPIC: "soap-topic"

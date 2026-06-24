@@ -3,7 +3,6 @@ Entrypoint for the SOAP Generation Microservice pod.
 
 Each pod:
  1. Starts a Kafka consumer (assigned a subset of partitions by the broker)
- 2. Starts a worker pool that calls MedGemma concurrently
  3. Publishes generated SOAP notes back to Kafka
  4. Exposes /healthz, /ready, /metrics for k8s probes & scraping
 
