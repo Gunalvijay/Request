@@ -1,69 +1,121 @@
 apiVersion: apps/v1
 kind: Deployment
-
 metadata:
   name: soap-generation-service
 
 spec:
+  replicas: 1
+
   selector:
     matchLabels:
       app: soap-generation-service
 
   template:
-
     metadata:
       labels:
         app: soap-generation-service
 
     spec:
 
+      initContainers:
+        - name: pull-medgemma
+
+          image: ollama/ollama:latest
+
+          command:
+            - sh
+            - -c
+            - |
+              ollama serve &
+              sleep 20
+              ollama pull medgemma:latest
+              pkill ollama || true
+              exit 0
+
+          volumeMounts:
+            - name: ollama-storage
+              mountPath: /root/.ollama
+
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+
+            limits:
+              cpu: "1000m"
+              memory: "2Gi"
+
       containers:
 
-      - name: soap-generation-service
+        - name: soap-generation-service
 
-        image: soap-generation-service:v1
+          image: gunalvijay/soap-generation-service:v2
 
-        imagePullPolicy: Always
+          imagePullPolicy: Always
 
-        envFrom:
-        - configMapRef:
-            name: soap-generation-config
+          envFrom:
+            - configMapRef:
+                name: soap-generation-config
 
-        ports:
-        - containerPort: 8080
-        - containerPort: 9100
+          ports:
+            - containerPort: 8080
+            - containerPort: 9100
 
-        resources:
-          requests:
-            cpu: 250m
-            memory: 256Mi
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
 
-          limits:
-            cpu: 1000m
-            memory: 512Mi
+            limits:
+              cpu: 1000m
+              memory: 512Mi
 
+        - name: ollama
 
-      - name: ollama
+          image: ollama/ollama:latest
 
-        image: ollama/ollama:latest
+          command:
+            - ollama
+            - serve
+          
+          env:
+            - name: OLLAMA_NUM_PARALLEL
+              value: "1"
 
-        ports:
-        - containerPort: 11434
+          ports:
+            - containerPort: 11434
 
-        volumeMounts:
-        - name: ollama-storage
-          mountPath: /root/.ollama
+          resources:
+            requests:
+              cpu: "2000m"
+              memory: "5Gi"
 
-        resources:
-          requests:
-            cpu: "1000m"
-            memory: "2Gi"
-
-          limits:
-            cpu: "2000m"
-            memory: "3Gi"
+            limits:
+              cpu: "4000m"
+              memory: "8Gi"
+          
+          volumeMounts:
+            - name: ollama-storage
+              mountPath: /root/.ollama
 
       volumes:
+        - name: ollama-storage
+          persistentVolumeClaim:
+            claimName: ollama-models-pvc
 
-      - name: ollama-storage
-        emptyDir: {}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+
+metadata:
+  name: ollama-models-pvc
+
+spec:
+  accessModes:
+    - ReadWriteOnce
+
+  resources:
+    requests:
+      storage: 10Gi
+
+  storageClassName: hostpath
