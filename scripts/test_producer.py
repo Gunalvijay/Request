@@ -11,7 +11,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "app"))
 
 from aiokafka import AIOKafkaProducer  # noqa: E402
 
-BOOTSTRAP = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
+BOOTSTRAP = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "172.19.0.4:30092")
 
 SAMPLE_TRANSCRIPT = (
     "Doctor: What brings you in today? "
