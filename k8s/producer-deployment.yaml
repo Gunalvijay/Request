@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: transcript-api
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: transcript-api
+
+  template:
+    metadata:
+      labels:
+        app: transcript-api
+
+    spec:
+      containers:
+      - name: transcript-api
+
+        image:
+          gunalvijay/transcript-api:v1
+
+        env:
+        - name:
+            KAFKA_BOOTSTRAP_SERVERS
+          value:
+            kafka:9092
+
+        ports:
+        - containerPort: 8000
