@@ -95,7 +95,101 @@ docker compose logs -f soap-generation-service
 kubectl apply -f k8s/configmap.yaml
 kubectl apply -f k8s/deployment.yaml
 kubectl apply -f k8s/hpa.yaml
+kubectl apply -f k8s/kafka.yaml
+kubectl apply -f k8s/kafka-service.yaml
+kubectl apply -f k8s/producer-deployment.yaml
+kubectl apply -f k8s/producer-service.yaml
+
+#Expect three pods, wait untill every pod ready and running with 0 restarts
+kubectl get pods -w
+
+#If soap-generation-service-xxxx is still in init 0:1, see the live log of pulling medgemma
+kubectl logs -f deployment/soap-generation-service -c pull-medgemma
+
+#Create transcript-topic and soap-topic with required partitions and replication-factor
+  #Get into kafka
+  kubectl exec -it deployment/kafka -- sh
+
+  
+  #Create transcript-topic
+  /opt/kafka/bin/kafka-topics.sh \
+  --create \
+  --topic transcript-topic \
+  --bootstrap-server localhost:9092 \
+  --partitions 2 \
+  --replication-factor 1
+
+  #Create soap-topic
+  /opt/kafka/bin/kafka-topics.sh \
+  --create \
+  --topic soap-topic \
+  --bootstrap-server localhost:9092 \
+  --partitions 2 \
+  --replication-factor 1
+
+  #Expect _consumer_offset, transcript-topic and soap-topic
+  /opt/kafka/bin/kafka-topics.sh \
+  --bootstrap-server localhost:9092 \
+  --list
+
+#Deploy Metrics-server API
+kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+
+#Expect metrics-server-xxxx  1/1 Running
+kubectl get pods -n kube-system
+
+#if the above command fails
+kubectl patch deployment metrics-server \
+-n kube-system \
+--type=json \
+-p='[
+{
+"op":"add",
+"path":"/spec/template/spec/containers/0/args/-",
+"value":"--kubelet-insecure-tls"
+}
+]'
+
+#Restart Metrics-server
+kubectl rollout restart deployment metrics-server -n kube-system
+
+#Verify Metrics API
+kubectl top nodes
+kubectl top pods
+
+#Live logs of CPU, Memory usage and pod replication
+kubectl get hpa -w
+
+#Live logs of request processing
+kubectl logs -f deployment/soap-generation-service \
+-c soap-generation-service
+
+#Req on transcript-topic
+kubectl exec -it deployment/kafka -- sh
+
+/opt/kafka/bin/kafka-console-consumer.sh \
+--bootstrap-server localhost:9092 \
+--topic transcript-topic
+
+#Req on soap-topic
+kubectl exec -it deployment/kafka -- sh
+
+/opt/kafka/bin/kafka-console-consumer.sh \
+--bootstrap-server localhost:9092 \
+--topic soap-topic
+
+#Test with multiple req
+for i in {1..100}
+do
+curl -X POST http://localhost:8000/transcripts \
+-H "Content-Type: application/json" \
+-d "{\"transcript_id\":\"load-$i\",\"transcript\":\"patient has fever and headache\"}" &
+done
+ 
+wait
+
 ```
+
 
 `kubectl get hpa soap-generation-hpa -w` to watch it scale pods between 2 and 10
 based on CPU (70%) / memory (75%) utilization. The optional KEDA `ScaledObject`
@@ -121,19 +215,3 @@ scaling once KEDA is installed — no application code changes required.
 | `minReplicas`/`maxReplicas` | hpa.yaml | pod count bounds (cap at Kafka partition count for 1:1 mapping) |
 | `averageUtilization` (cpu/memory) | hpa.yaml | scale-up sensitivity |
 | KEDA `lagThreshold` | hpa.yaml (commented) | scale on backlog size, once enabled |
-
-
-To see the soap output - docker compose exec kafka /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server localhost:29092 --topic soap-topic --from-beginning --max-messages 5
-
-To start a soap service - docker compose logs -f soap-generation-service
-
-To publish sample events - python scripts/test_producer.py
-
-To see the Kafka live logs - docker run -it `  
->> --network soap-microservice_default `
->> -p 4321:8080 `
->> -e DYNAMIC_CONFIG_ENABLED=true `
->> -e KAFKA_CLUSTERS_0_NAME=team3-local `
->> -e KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:29092 `
->> --name kafbat `
->> ghcr.io/kafbat/kafka-ui
