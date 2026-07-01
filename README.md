@@ -178,6 +178,34 @@ kubectl exec -it deployment/kafka -- sh
 --bootstrap-server localhost:9092 \
 --topic soap-topic
 
+#To check the current partitions, replication factor and other config
+kubectl exec -it deployment/kafka -- sh
+
+/opt/kafka/bin/kafka-topics.sh \
+--describe \
+--bootstrap-server localhost:9092 \
+--topic transcript-topic
+
+/opt/kafka/bin/kafka-topics.sh \
+--describe \
+--bootstrap-server localhost:9092 \
+--topic soap-topic
+
+#To Increase the partition
+kubectl exec -it deployment/kafka -- sh
+
+/opt/kafka/bin/kafka-topics.sh \
+--alter \
+--bootstrap-server localhost:9092 \
+--topic transcript-topic \
+--partitions 10
+
+/opt/kafka/bin/kafka-topics.sh \
+--alter \
+--bootstrap-server localhost:9092 \
+--topic soap-topic \
+--partitions 10
+
 #Test with multiple req
 for i in {1..100}
 do

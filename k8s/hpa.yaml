@@ -1,17 +1,3 @@
-# =====================================================================
-# HorizontalPodAutoscaler for the SOAP Generation microservice.
-#
-# This is the piece in the HLD diagram labeled:
-#   "HORIZONTAL POD AUTOSCALER (HPA) - Scale based on:
-#    CPU / Memory / Kafka Lag / Custom Metrics"
-#
-# autoscaling/v2 supports CPU + memory out of the box. Kafka-lag-based
-# scaling needs an external metrics source (KEDA or prometheus-adapter +
-# kafka-exporter) - since Prometheus/Grafana are deliberately out of scope
-# for now, this manifest ships with CPU/Memory metrics active, and Kafka
-# lag scaling is included as a ready-to-enable section once that
-# observability stack is back in scope.
-# =====================================================================
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:

@@ -5,7 +5,7 @@ metadata:
   name: transcript-api
 
 spec:
-  type: LoadBalancer
+  type: ClusterIP
 
   selector:
     app: transcript-api

@@ -1,0 +1,22 @@
+apiVersion: apisix.apache.org/v2
+kind: ApisixRoute
+
+metadata:
+  name: transcript-route
+
+spec:
+  ingressClassName: apisix
+
+  http:
+  - name: transcript
+
+    match:
+      paths:
+      - /transcripts
+
+      methods:
+      - POST
+
+    backends:
+    - serviceName: transcript-api
+      servicePort: 8000

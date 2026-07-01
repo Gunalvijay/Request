@@ -46,8 +46,6 @@ spec:
         - name: KAFKA_INTER_BROKER_LISTENER_NAME
           value: "PLAINTEXT"
 
-        # ADD THESE ↓↓↓
-
         - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
           value: "1"
 
