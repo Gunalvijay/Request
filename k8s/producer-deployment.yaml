@@ -21,8 +21,7 @@ spec:
       - name: transcript-api
 
         image:
-          gunalvijay/transcript-api:v1
-
+          gunalvijay/transcript-api:v3
         env:
         - name:
             KAFKA_BOOTSTRAP_SERVERS

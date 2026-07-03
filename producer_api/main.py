@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from aiokafka import AIOKafkaProducer
 import os
 import json
+import logging
 
 producer = None
 
@@ -25,6 +26,9 @@ TOPIC = "transcript-topic"
 async def lifespan(app: FastAPI):
     global producer
 
+    logger = logging.getLogger("uvicorn")
+    logger.info(f"Connecting to Kafka at {BOOTSTRAP}")
+
     producer = AIOKafkaProducer(
         bootstrap_servers=BOOTSTRAP,
         value_serializer=lambda v:
@@ -33,9 +37,13 @@ async def lifespan(app: FastAPI):
 
     await producer.start()
 
+    logger.info("Connected to Kafka")
+
     yield
 
     await producer.stop()
+
+    logger.info("Producer stopped")
 
 
 app = FastAPI(
@@ -59,4 +67,10 @@ async def publish(
         "status": "published",
         "transcript_id":
         request.transcript_id
+    }
+
+@app.get("/health")
+async def health():
+    return {
+        "status": "ok"
     }
